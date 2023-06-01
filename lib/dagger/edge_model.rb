@@ -15,10 +15,16 @@ module Dagger
       scope :direct, -> { where hops: 0 }
 
       after_create :add_implicit_edges!
+      before_destroy :destroy_implicit_edges!
     end
 
     def direct?
       hops.zero?
+    end
+
+    def destroy
+      raise StandardError, "Relation does not exists" unless direct?
+      super
     end
 
     private
@@ -73,6 +79,23 @@ module Dagger
           #{cross_join ? "CROSS JOIN #{self.class.quoted_table_name} y" : ''}
           WHERE #{where}
       SQL
+    end
+
+    def destroy_implicit_edges!
+      return unless direct?
+
+      purge_list = self.class.where(direct_edge: self).pluck(:id)
+      loop do
+        new_purge_list = self.class.where.not(id: purge_list)
+          .and(
+            self.class.where(entry_edge_id: purge_list).or(self.class.where(exit_edge_id: purge_list))
+          )
+        purge_list += new_purge_list
+        break if new_purge_list.empty?
+      end
+
+      self.class.where(id: purge_list)
+        .where.not(id: self).delete_all
     end
   end
 end
