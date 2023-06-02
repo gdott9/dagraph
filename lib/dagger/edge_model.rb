@@ -1,4 +1,5 @@
 require 'active_support/concern'
+require 'active_support/core_ext/array/access'
 
 module Dagger
   module EdgeModel
@@ -15,6 +16,8 @@ module Dagger
       scope :direct, -> { where hops: 0 }
 
       after_create :add_implicit_edges!
+      after_save :calculate_implicit_edges_weight!
+
       before_destroy :destroy_implicit_edges!
     end
 
@@ -27,13 +30,35 @@ module Dagger
       super
     end
 
+    def dependent_implicit_edges
+      edges_list = self.class.where(direct_edge: self).pluck(:id)
+      loop do
+        new_edges_list = self.class.where.not(id: edges_list)
+          .and(
+            self.class.where(entry_edge_id: edges_list).or(self.class.where(exit_edge_id: edges_list))
+          )
+        edges_list += new_edges_list
+        break if new_edges_list.empty?
+      end
+
+      self.class.where(id: edges_list.excluding(id))
+    end
+
     private
 
     def add_implicit_edges!
       return unless direct?
 
       self.class.with_advisory_lock("dagger_#{self.class.table_name}") do
-        update! entry_edge: self, direct_edge: self, exit_edge: self
+        update_columns entry_edge_id: id, direct_edge_id: id, exit_edge_id: id
+
+        direct_edges_count = self.class.direct.where(child: child).count
+        if direct_edges_count > 1
+          update_column :weight, weight / direct_edges_count
+          self.class.direct.where(child: child).where.not(id: self).each do |edge|
+            edge.update! weight: edge.weight * (direct_edges_count - 1) / direct_edges_count
+          end
+        end
 
         select = self.class.sanitize_sql_array(
           [
@@ -59,7 +84,7 @@ module Dagger
 
         select = self.class.sanitize_sql_array(
           [
-            "x.id, :id, y.id, x.parent_id, y.child_id, x.hops + y.hops + 2, x.weight * :weight / 100, x.source",
+            "x.id, :id, y.id, x.parent_id, y.child_id, x.hops + y.hops + 2, x.weight * y.weight * :weight / 10000, x.source",
             id: id, weight: weight
           ]
         )
@@ -84,18 +109,15 @@ module Dagger
     def destroy_implicit_edges!
       return unless direct?
 
-      purge_list = self.class.where(direct_edge: self).pluck(:id)
-      loop do
-        new_purge_list = self.class.where.not(id: purge_list)
-          .and(
-            self.class.where(entry_edge_id: purge_list).or(self.class.where(exit_edge_id: purge_list))
-          )
-        purge_list += new_purge_list
-        break if new_purge_list.empty?
-      end
+      dependent_implicit_edges.delete_all
+    end
 
-      self.class.where(id: purge_list)
-        .where.not(id: self).delete_all
+    def calculate_implicit_edges_weight!
+      return unless direct? && weight_previously_changed?
+
+      dependent_implicit_edges.update_all(
+        self.class.sanitize_sql_array(["weight = weight * ? / ?", weight, weight_previously_was])
+      )
     end
   end
 end
