@@ -15,9 +15,13 @@ module Dagger
 
       scope :direct, -> { where hops: 0 }
 
+      attr_readonly :entry_edge_id, :direct_edge_id, :exit_edge_id,
+        :parent_id, :child_id, :hops, :source
+
       after_create :add_implicit_edges!
       after_save :calculate_implicit_edges_weight!
 
+      before_destroy :check_readonly
       before_destroy :destroy_implicit_edges!
     end
 
@@ -25,9 +29,12 @@ module Dagger
       hops.zero?
     end
 
-    def destroy
-      raise StandardError, "Relation does not exists" unless direct?
-      super
+    def implicit?
+      !direct?
+    end
+
+    def readonly?
+      implicit?
     end
 
     def dependent_implicit_edges
@@ -46,11 +53,16 @@ module Dagger
 
     private
 
+    def check_readonly
+      puts readonly?.inspect
+      _raise_readonly_record_error if readonly?
+    end
+
     def add_implicit_edges!
       return unless direct?
 
       self.class.with_advisory_lock("dagger_#{self.class.table_name}") do
-        update_columns entry_edge_id: id, direct_edge_id: id, exit_edge_id: id
+        self.class.where(id: id).update_all(entry_edge_id: id, direct_edge_id: id, exit_edge_id: id)
 
         direct_edges_count = self.class.direct.where(child: child).count
         if direct_edges_count > 1
