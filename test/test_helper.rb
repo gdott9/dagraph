@@ -31,3 +31,21 @@ end
 
 require_relative 'app/schema'
 require_relative 'app/models'
+
+ActiveRecord::Base.logger = Logger.new(STDOUT)
+
+(1..7).each { |i| Node.create name: i }
+
+NodeEdge.create(parent_id: 1, child_id: 2, hops: 0)
+NodeEdge.create(parent_id: 1, child_id: 3, hops: 0)
+NodeEdge.create(parent_id: 1, child_id: 3, hops: 0)
+NodeEdge.create(parent_id: 2, child_id: 4, hops: 0)
+NodeEdge.create(parent_id: 3, child_id: 4, hops: 0)
+#
+# NodeEdge.create(parent_id: 1, child_id: 2, hops: 0)
+# NodeEdge.create(parent_id: 2, child_id: 3, hops: 0)
+# NodeEdge.create(parent_id: 1, child_id: 3, hops: 0)
+# NodeEdge.create(parent_id: 4, child_id: 2, hops: 0)
+# NodeEdge.create(parent_id: 3, child_id: 5, hops: 0)
+# NodeEdge.create(parent_id: 7, child_id: 6, hops: 0)
+# NodeEdge.create(parent_id: 6, child_id: 3, hops: 0)
