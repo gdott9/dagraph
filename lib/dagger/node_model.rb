@@ -16,10 +16,10 @@ module Dagger
       has_many :roots, -> { distinct.roots }, class_name: model_name.to_s, through: :parent_edges, source: :parent
       has_many :leaves, -> { distinct.leaves }, class_name: model_name.to_s, through: :child_edges, source: :child
 
-      has_many :direct_parent_edges, -> { direct }, class_name: _dagger.edges_class_name, foreign_key: :child_id, inverse_of: :child
-      has_many :direct_parents, -> { distinct }, class_name: model_name.to_s, through: :direct_parent_edges, source: :parent
-      has_many :direct_child_edges, -> { direct }, class_name: _dagger.edges_class_name, foreign_key: :parent_id, inverse_of: :parent
-      has_many :direct_children, -> { distinct }, class_name: model_name.to_s, through: :direct_child_edges, source: :child
+      has_many :direct_parent_edges, -> { direct }, class_name: _dagger.edges_class_name, foreign_key: :child_id, inverse_of: :child, dependent: :destroy
+      has_many :direct_parents, -> { distinct }, class_name: model_name.to_s, through: :direct_parent_edges, source: :parent, dependent: :destroy
+      has_many :direct_child_edges, -> { direct }, class_name: _dagger.edges_class_name, foreign_key: :parent_id, inverse_of: :parent, dependent: :destroy
+      has_many :direct_children, -> { distinct }, class_name: model_name.to_s, through: :direct_child_edges, source: :child, dependent: :destroy
     end
 
     def graph_to_hash
