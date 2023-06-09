@@ -23,6 +23,8 @@ module Dagger
 
       before_destroy :check_readonly
       before_destroy :destroy_implicit_edges!
+
+      validate :_dagger_cycle_detection
     end
 
     def direct?
@@ -130,6 +132,12 @@ module Dagger
       dependent_implicit_edges.update_all(
         self.class.sanitize_sql_array(["weight = weight * ? / ?", weight, weight_previously_was])
       )
+    end
+
+    def _dagger_cycle_detection
+      if parent == child || child.parent_of?(parent)
+        errors.add :base, 'You cannot add a parent as a child'
+      end
     end
   end
 end
