@@ -12,7 +12,7 @@ ActiveRecord::Schema.define(version: 0) do
     t.references :exit_edge, foreign_key: {to_table: :node_edges}
     t.references :parent, null: false, foreign_key: {to_table: :nodes}
     t.references :child, null: false, foreign_key: {to_table: :nodes}
-    t.integer :hops, index: true, null: false
+    t.integer :hops, index: true, null: false, default: 0
     t.float :weight, null: false, default: 100
     t.string :source, index: true, null: false, default: 'default'
   end

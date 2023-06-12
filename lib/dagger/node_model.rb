@@ -62,7 +62,7 @@ module Dagger
 
     def direct_child_of?(node)
       return false if node.nil?
-      node.parent_of?(self)
+      node.direct_parent_of?(self)
     end
 
     def root?

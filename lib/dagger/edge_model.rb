@@ -14,6 +14,7 @@ module Dagger
       belongs_to :child, class_name: _dagger.nodes_class_name
 
       scope :direct, -> { where hops: 0 }
+      scope :implicit, -> { where.not hops: 0 }
 
       attr_readonly :entry_edge_id, :direct_edge_id, :exit_edge_id,
         :parent_id, :child_id, :hops, :source
@@ -56,7 +57,6 @@ module Dagger
     private
 
     def check_readonly
-      puts readonly?.inspect
       _raise_readonly_record_error if readonly?
     end
 
@@ -136,7 +136,7 @@ module Dagger
 
     def _dagger_cycle_detection
       if parent == child || child.parent_of?(parent)
-        errors.add :base, 'You cannot add a parent as a child'
+        errors.add :base, :cycle_detected, message: 'You cannot add a parent as a child'
       end
     end
   end

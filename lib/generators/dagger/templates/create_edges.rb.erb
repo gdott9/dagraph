@@ -6,7 +6,7 @@ class <%= migration_class_name %> < ActiveRecord::Migration<%= migration_version
       t.references :exit_edge, null: true, foreign_key: {to_table: :<%= migration_name %>}
       t.references :parent, null: false, foreign_key: {to_table: :<%= klass.table_name %>}
       t.references :child, null: false, foreign_key: {to_table: :<%= klass.table_name %>}
-      t.integer :hops, index: true, null: false
+      t.integer :hops, index: true, null: false, default: 0
       t.float :weight, null: false, default: 100
       t.string :source, index: true, null: false, default: 'default'
     end

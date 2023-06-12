@@ -1,6 +1,6 @@
 module Dagger
   class NodeConfig
-    def initialize(model_class, options)
+    def initialize(model_class, **options)
       @model_class = model_class
       @options = options
     end
