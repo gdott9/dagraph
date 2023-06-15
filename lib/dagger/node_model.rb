@@ -22,12 +22,12 @@ module Dagger
       has_many :direct_children, -> { distinct }, class_name: model_name.to_s, through: :direct_child_edges, source: :child, dependent: :destroy
     end
 
-    def parents_to_hash
-      graph_to_hash parents, :direct_children
+    def parents_to_hash(depth: nil)
+      graph_to_hash parents, :direct_children, depth: depth
     end
 
-    def children_to_hash
-      graph_to_hash children, :direct_parents
+    def children_to_hash(depth: nil)
+      graph_to_hash children, :direct_parents, depth: depth
     end
 
     def children_at_depth(depth)
@@ -72,9 +72,11 @@ module Dagger
 
     private
 
-    def graph_to_hash(nodes, association)
+    def graph_to_hash(nodes, association, depth: nil)
       hash = {self => {}}
       ids = {self => hash[self]}
+
+      nodes = nodes.where(self.class._dagger.edges_class.table_name => {hops: ..depth - 1}) if depth.present? && depth > 0
 
       nodes.includes(association).each do |node|
         ids[node] = {} unless ids.key?(node)

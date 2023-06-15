@@ -138,6 +138,23 @@ describe Dagger::NodeModel do
       }, node_c.parents_to_hash)
     end
 
+    it "should get hash with parents with depth" do
+      node_a = Node.find_by(name: 'A')
+      node_b = Node.find_by(name: 'B')
+      node_c = Node.find_by(name: 'C')
+      node_f = Node.find_by(name: 'F')
+
+      assert_equal({
+        node_c => {
+          node_a => {},
+          node_b => {
+            node_a => {},
+          },
+          node_f => {}
+        }
+      }, node_c.parents_to_hash(depth: 1))
+    end
+
     it "should get hash with children" do
       node_a = Node.find_by(name: 'A')
       node_b = Node.find_by(name: 'B')
@@ -156,6 +173,23 @@ describe Dagger::NodeModel do
           }
         }
       }, node_a.children_to_hash)
+    end
+
+    it "should get hash with children with depth" do
+      node_a = Node.find_by(name: 'A')
+      node_b = Node.find_by(name: 'B')
+      node_c = Node.find_by(name: 'C')
+
+      assert_equal({
+        node_a => {
+          node_b => {
+            node_c => {
+            }
+          },
+          node_c => {
+          }
+        }
+      }, node_a.children_to_hash(depth: 1))
     end
   end
 
