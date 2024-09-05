@@ -233,4 +233,51 @@ describe Dagger::EdgeModel do
       assert edge.dependent_implicit_edges.where(parent: Node.find_by(name: 'D'), child: Node.find_by(name: 'E'), hops: 2).any?
     end
   end
+
+  describe "when removing edges" do
+    it "should recaclulate implicit edges weight" do
+      # ┌───┐
+      # │ A │
+      # └─┬─┘
+      #   ▼
+      # ┌───┐
+      # │ B │ ┌───┐
+      # └─┬─┘ │ E │
+      #   ▼   └─┬─┘
+      # ┌───┐   │
+      # │ C │◄──┘
+      # └───┘
+      NodeEdge.create(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'B'))
+      edge_b_c = NodeEdge.create(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'C'))
+      edge_d_c = NodeEdge.create(parent: Node.find_by(name: 'D'), child: Node.find_by(name: 'C'))
+      edge_e_c = NodeEdge.create(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'C'))
+      edge_f_c = NodeEdge.create(parent: Node.find_by(name: 'F'), child: Node.find_by(name: 'C'))
+
+      assert_equal 25, edge_b_c.reload.weight
+      assert_equal 25, edge_d_c.reload.weight
+      assert_equal 25, edge_e_c.reload.weight
+      assert_equal 25, edge_f_c.reload.weight
+      assert_equal 25, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+      edge_f_c.destroy!
+
+      assert_equal 100 / 3.0, edge_b_c.reload.weight
+      assert_equal 100 / 3.0, edge_d_c.reload.weight
+      assert_equal 100 / 3.0, edge_e_c.reload.weight
+      assert_equal 100 / 3.0, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+      edge_e_c.destroy!
+
+      assert_equal 50, edge_b_c.reload.weight
+      assert_equal 50, edge_d_c.reload.weight
+      assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+      edge_d_c.destroy!
+
+      assert_equal 100, edge_b_c.reload.weight
+      assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+      edge_b_c.destroy!
+    end
+  end
 end

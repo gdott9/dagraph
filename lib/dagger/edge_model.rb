@@ -24,6 +24,7 @@ module Dagger
 
       before_destroy :check_readonly
       before_destroy :destroy_implicit_edges!
+      after_destroy :calculate_direct_edges_weight!
 
       validate :_dagger_cycle_detection
     end
@@ -132,6 +133,13 @@ module Dagger
       dependent_implicit_edges.update_all(
         self.class.sanitize_sql_array(["weight = weight * ? / ?", weight, weight_previously_was])
       )
+    end
+
+    def calculate_direct_edges_weight!
+      direct_edges = self.class.direct.where(child: child)
+      direct_edges.each do |edge|
+        edge.update! weight: edge.weight + weight / direct_edges.size
+      end
     end
 
     def _dagger_cycle_detection
