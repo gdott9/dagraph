@@ -61,16 +61,20 @@ module Dagraph
       _raise_readonly_record_error if readonly?
     end
 
+    def direct_edges
+      @direct_edges ||= self.class.direct.where(child: child, source: source)
+    end
+
     def add_implicit_edges!
       return unless direct?
 
       self.class.with_advisory_lock("dagraph_#{self.class.table_name}") do
         self.class.where(id: id).update_all(entry_edge_id: id, direct_edge_id: id, exit_edge_id: id)
 
-        direct_edges_count = self.class.direct.where(child: child).count
+        direct_edges_count = direct_edges.count
         if direct_edges_count > 1
           update_column :weight, weight / direct_edges_count
-          self.class.direct.where(child: child).where.not(id: self).each do |edge|
+          direct_edges.where.not(id: self).each do |edge|
             edge.update! weight: edge.weight * (direct_edges_count - 1) / direct_edges_count
           end
         end
@@ -104,7 +108,7 @@ module Dagraph
           ]
         )
         where = self.class.sanitize_sql_for_conditions(
-          ["x.child_id = ? AND y.parent_id = ? AND x.source = ?", parent_id, child_id, source]
+          ["x.child_id = ? AND y.parent_id = ? AND x.source = ? AND y.source = ?", parent_id, child_id, source, source]
         )
         self.class.connection.exec_insert insert_query(select, where, cross_join: true)
       end
@@ -136,7 +140,6 @@ module Dagraph
     end
 
     def calculate_direct_edges_weight!
-      direct_edges = self.class.direct.where(child: child)
       direct_edges.each do |edge|
         edge.update! weight: edge.weight + weight / direct_edges.size
       end

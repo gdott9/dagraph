@@ -280,4 +280,208 @@ describe Dagraph::EdgeModel do
       edge_b_c.destroy!
     end
   end
+
+  describe "when using different categories" do
+    describe "when adding edges" do
+      it "should set correct source" do
+        #
+        # ┌───┐         ┌───┐  ┌───┐
+        # │ F │         │ G │  │ M │
+        # └─a─┘         └─b─┘  └─┬─┘
+        #   ▼             ▼      │
+        # ┌───┐  ┌───┐  ┌───┐    a
+        # │ E │  │ D │  │ C │◄───┘
+        # └─┬─┘  └─a─┘  └─┬─┘
+        #   │      ▼      │
+        #   a    ┌───┐    b
+        #   └───►│ A │◄───┘
+        #        └─a─┘
+        #          ▼
+        #        ┌───┐
+        #   ┌─a──┤ B ├─b──┐
+        #   │    └─a─┘    │
+        #   ▼      ▼      ▼
+        # ┌───┐  ┌───┐  ┌───┐
+        # │ J │  │ K │  │ L │
+        # └─a─┘  └───┘  └─b─┘
+        #   ▼             ▼
+        # ┌───┐         ┌───┐
+        # │ H │         │ I │
+        # └───┘         └───┘
+        Node.create! [
+          {name: 'H'},
+          {name: 'I'},
+          {name: 'J'},
+          {name: 'K'},
+          {name: 'L'},
+          {name: 'M'},
+        ]
+        NodeEdge.create(parent: Node.find_by(name: 'F'), child: Node.find_by(name: 'E'), source: :a)
+        NodeEdge.create(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'A'), source: :a)
+        NodeEdge.create(parent: Node.find_by(name: 'D'), child: Node.find_by(name: 'A'), source: :a)
+        NodeEdge.create(parent: Node.find_by(name: 'G'), child: Node.find_by(name: 'C'), source: :b)
+        NodeEdge.create(parent: Node.find_by(name: 'M'), child: Node.find_by(name: 'C'), source: :a)
+        NodeEdge.create(parent: Node.find_by(name: 'C'), child: Node.find_by(name: 'A'), source: :b)
+
+        NodeEdge.create(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'J'), source: :a)
+        NodeEdge.create(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'K'), source: :a)
+        NodeEdge.create(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'L'), source: :b)
+        NodeEdge.create(parent: Node.find_by(name: 'J'), child: Node.find_by(name: 'H'), source: :a)
+        NodeEdge.create(parent: Node.find_by(name: 'L'), child: Node.find_by(name: 'I'), source: :b)
+
+        NodeEdge.create(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'B'), source: :a)
+
+        assert_equal "a", NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'J'), hops: 1).source
+        assert_equal "a", NodeEdge.find_by(parent: Node.find_by(name: 'F'), child: Node.find_by(name: 'H'), hops: 4).source
+        assert_equal "b", NodeEdge.find_by(parent: Node.find_by(name: 'G'), child: Node.find_by(name: 'A'), hops: 1).source
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'L'), hops: 1)
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'M'), child: Node.find_by(name: 'A'), hops: 1)
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'M'), child: Node.find_by(name: 'I'), hops: 4)
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'C'), child: Node.find_by(name: 'B'), hops: 1)
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'G'), child: Node.find_by(name: 'H'), hops: 4)
+      end
+
+      it "should calculate correct weight" do
+        # ┌───┐  ┌───┐  ┌───┐
+        # │ A │  │ C │  │ D │
+        # └─┬─┘  └─a─┘  └─┬─┘
+        #   │      ▼      │
+        #   a    ┌───┐    b  ┌───┐
+        #   └───►│ B │◄───┘  │ F │
+        #        └─a─┘       └─┬─┘
+        #          ▼           │
+        #        ┌───┐         │
+        #        │ E │◄──────b─┘
+        #        └───┘
+        edge_a_b = NodeEdge.create(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'B'), source: :a)
+        assert_equal 100, edge_a_b.weight
+
+        edge_c_b = NodeEdge.create(parent: Node.find_by(name: 'C'), child: Node.find_by(name: 'B'), source: :a)
+        assert_equal 50, edge_c_b.weight
+        assert_equal 50, edge_a_b.reload.weight
+
+        edge_d_b = NodeEdge.create(parent: Node.find_by(name: 'D'), child: Node.find_by(name: 'B'), source: :b)
+        assert_equal 100, edge_d_b.weight
+        assert_equal 50, edge_c_b.reload.weight
+        assert_equal 50, edge_a_b.reload.weight
+
+        edge_b_e = NodeEdge.create(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'E'), source: :a)
+        assert_equal 100, edge_b_e.weight
+        assert_equal 100, edge_d_b.reload.weight
+        assert_equal 50, edge_c_b.reload.weight
+        assert_equal 50, edge_a_b.reload.weight
+        assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'E'), hops: 1).weight
+        assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'C'), child: Node.find_by(name: 'E'), hops: 1).weight
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'D'), child: Node.find_by(name: 'E'), hops: 1)
+
+        edge_f_e = NodeEdge.create(parent: Node.find_by(name: 'F'), child: Node.find_by(name: 'E'), source: :b)
+        assert_equal 100, edge_f_e.weight
+        assert_equal 100, edge_b_e.reload.weight
+        assert_equal 100, edge_d_b.reload.weight
+        assert_equal 50, edge_c_b.reload.weight
+        assert_equal 50, edge_a_b.reload.weight
+        assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'E'), hops: 1).weight
+        assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'C'), child: Node.find_by(name: 'E'), hops: 1).weight
+      end
+
+      it "should recaclulate implicit edges weight" do
+        # ┌───┐
+        # │ A │
+        # └─┬─┘
+        #   ▼
+        # ┌───┐
+        # │ B │ ┌───┐
+        # └─┬─┘ │ E │
+        #   ▼   └─┬─┘
+        # ┌───┐   │
+        # │ C │◄──┘
+        # └─┬─┘
+        #   ▼
+        # ┌───┐
+        # │ D │
+        # └─┬─┘
+        #   ▼
+        # ┌───┐
+        # │ F │
+        # └───┘
+        edge_a_b = NodeEdge.create(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'B'), source: :a)
+        edge_b_c = NodeEdge.create(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'C'), source: :a)
+        edge_e_c = NodeEdge.create(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'C'), source: :b)
+        edge_c_d = NodeEdge.create(parent: Node.find_by(name: 'C'), child: Node.find_by(name: 'D'), source: :a)
+        edge_d_f = NodeEdge.create(parent: Node.find_by(name: 'D'), child: Node.find_by(name: 'F'), source: :a)
+
+        assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+        assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'D'), hops: 2).weight
+        assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'F'), hops: 3).weight
+        assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'D'), hops: 1).weight
+        assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'F'), hops: 2).weight
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'D'), hops: 1)
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'F'), hops: 2)
+
+        edge_c_d.update! weight: 20
+
+        assert_equal 100, edge_a_b.reload.weight
+        assert_equal 100, edge_b_c.reload.weight
+        assert_equal 100, edge_e_c.reload.weight
+        assert_equal 20, edge_c_d.reload.weight
+        assert_equal 100, edge_d_f.reload.weight
+
+        assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+        assert_equal 20, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'D'), hops: 2).weight
+        assert_equal 20, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'F'), hops: 3).weight
+
+        assert_equal 20, NodeEdge.find_by(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'D'), hops: 1).weight
+        assert_equal 20, NodeEdge.find_by(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'F'), hops: 2).weight
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'D'), hops: 1)
+        assert_nil NodeEdge.find_by(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'F'), hops: 2)
+      end
+    end
+
+    describe "when removing edges" do
+      it "should recaclulate implicit edges weight" do
+        # ┌───┐
+        # │ A │
+        # └─┬─┘
+        #   ▼
+        # ┌───┐
+        # │ B │ ┌───┐
+        # └─┬─┘ │ E │
+        #   ▼   └─┬─┘
+        # ┌───┐   │
+        # │ C │◄──┘
+        # └───┘
+        NodeEdge.create(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'B'), source: :a)
+        edge_b_c = NodeEdge.create(parent: Node.find_by(name: 'B'), child: Node.find_by(name: 'C'), source: :a)
+        edge_d_c = NodeEdge.create(parent: Node.find_by(name: 'D'), child: Node.find_by(name: 'C'), source: :a)
+        edge_e_c = NodeEdge.create(parent: Node.find_by(name: 'E'), child: Node.find_by(name: 'C'), source: :b)
+        edge_f_c = NodeEdge.create(parent: Node.find_by(name: 'F'), child: Node.find_by(name: 'C'), source: :b)
+
+        assert_equal 50, edge_b_c.reload.weight
+        assert_equal 50, edge_d_c.reload.weight
+        assert_equal 50, edge_e_c.reload.weight
+        assert_equal 50, edge_f_c.reload.weight
+        assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+        edge_f_c.destroy!
+
+        assert_equal 50, edge_b_c.reload.weight
+        assert_equal 50, edge_d_c.reload.weight
+        assert_equal 100, edge_e_c.reload.weight
+        assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+        edge_e_c.destroy!
+
+        assert_equal 50, edge_b_c.reload.weight
+        assert_equal 50, edge_d_c.reload.weight
+        assert_equal 50, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+        edge_d_c.destroy!
+
+        assert_equal 100, edge_b_c.reload.weight
+        assert_equal 100, NodeEdge.find_by(parent: Node.find_by(name: 'A'), child: Node.find_by(name: 'C'), hops: 1).weight
+
+        edge_b_c.destroy!
+      end
+    end
+  end
 end
