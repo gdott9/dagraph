@@ -1,8 +1,8 @@
 require 'test_helper'
 
-describe Dagger::NodeConfig do
+describe Dagraph::NodeConfig do
   before do
-    @node_config = Dagger::NodeConfig.new(Node)
+    @node_config = Dagraph::NodeConfig.new(Node)
   end
 
   it "must return nodes class" do

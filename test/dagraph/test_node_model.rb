@@ -1,6 +1,6 @@
 require 'test_helper'
 
-describe Dagger::NodeModel do
+describe Dagraph::NodeModel do
   before do
     Node.create! [
       {name: 'A'},

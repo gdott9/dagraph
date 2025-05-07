@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
-require_relative "lib/dagger/version"
+require_relative "lib/dagraph/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "dagger"
-  spec.version = Dagger::VERSION
+  spec.name = "dagraph"
+  spec.version = Dagraph::VERSION
   spec.authors = ["Guillaume Dott"]
   spec.email = ["guillaume+github@dott.fr"]
 
   spec.summary = "Add support for directed acyclic graphs (DAG) to your ActiveRecord model"
   spec.description = spec.summary
-  spec.homepage = "https://code.lafourmi-immo.com/abacus/dagger"
+  spec.homepage = "https://github.com/gdott9/dagraph"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://code.lafourmi-immo.com/abacus/dagger"
-  spec.metadata["changelog_uri"] = "https://code.lafourmi-immo.com/abacus/dagger/src/branch/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/gdott9/dagraph"
+  spec.metadata["changelog_uri"] = "https://github.com/gdott9/dagraph/blob/main/CHANGELOG.md"
 
   spec.files = Dir.chdir(__dir__) do
     `git ls-files -z`.split("\x0").reject do |f|

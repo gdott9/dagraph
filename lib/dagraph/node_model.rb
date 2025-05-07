@@ -1,24 +1,24 @@
 require 'active_support/concern'
 
-module Dagger
+module Dagraph
   module NodeModel
     extend ActiveSupport::Concern
 
     included do
-      scope :roots, -> { where.not id: _dagger.edges_class.select(:child_id) }
-      scope :leaves, -> { where.not id: _dagger.edges_class.select(:parent_id) }
+      scope :roots, -> { where.not id: _dagraph.edges_class.select(:child_id) }
+      scope :leaves, -> { where.not id: _dagraph.edges_class.select(:parent_id) }
 
-      has_many :parent_edges, class_name: _dagger.edges_class_name, foreign_key: :child_id
+      has_many :parent_edges, class_name: _dagraph.edges_class_name, foreign_key: :child_id
       has_many :parents, -> { distinct }, class_name: model_name.to_s, through: :parent_edges
-      has_many :child_edges, class_name: _dagger.edges_class_name, foreign_key: :parent_id
+      has_many :child_edges, class_name: _dagraph.edges_class_name, foreign_key: :parent_id
       has_many :children, -> { distinct }, class_name: model_name.to_s, through: :child_edges
 
       has_many :roots, -> { distinct.roots }, class_name: model_name.to_s, through: :parent_edges, source: :parent
       has_many :leaves, -> { distinct.leaves }, class_name: model_name.to_s, through: :child_edges, source: :child
 
-      has_many :direct_parent_edges, -> { direct }, class_name: _dagger.edges_class_name, foreign_key: :child_id, inverse_of: :child, dependent: :destroy
+      has_many :direct_parent_edges, -> { direct }, class_name: _dagraph.edges_class_name, foreign_key: :child_id, inverse_of: :child, dependent: :destroy
       has_many :direct_parents, -> { distinct }, class_name: model_name.to_s, through: :direct_parent_edges, source: :parent, dependent: :destroy
-      has_many :direct_child_edges, -> { direct }, class_name: _dagger.edges_class_name, foreign_key: :parent_id, inverse_of: :parent, dependent: :destroy
+      has_many :direct_child_edges, -> { direct }, class_name: _dagraph.edges_class_name, foreign_key: :parent_id, inverse_of: :parent, dependent: :destroy
       has_many :direct_children, -> { distinct }, class_name: model_name.to_s, through: :direct_child_edges, source: :child, dependent: :destroy
     end
 
@@ -76,7 +76,7 @@ module Dagger
       hash = {self => {}}
       ids = {self => hash[self]}
 
-      nodes = nodes.where(self.class._dagger.edges_class.table_name => {hops: ..depth - 1}) if depth.present? && depth > 0
+      nodes = nodes.where(self.class._dagraph.edges_class.table_name => {hops: ..depth - 1}) if depth.present? && depth > 0
 
       nodes.includes(association).each do |node|
         ids[node] = {} unless ids.key?(node)

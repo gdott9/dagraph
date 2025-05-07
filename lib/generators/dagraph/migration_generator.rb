@@ -1,6 +1,6 @@
 require 'rails/generators/active_record'
 
-module Dagger
+module Dagraph
   module Generators # :nodoc:
     class MigrationGenerator < Rails::Generators::NamedBase # :nodoc:
       include Rails::Generators::Migration
@@ -18,7 +18,7 @@ module Dagger
       private
 
       def migration_name
-        dagger.edges_class.table_name
+        dagraph.edges_class.table_name
       end
 
       def migration_class_name
@@ -33,8 +33,8 @@ module Dagger
         @klass ||= class_name.constantize
       end
 
-      def dagger
-        klass._dagger
+      def dagraph
+        klass._dagraph
       end
     end
   end

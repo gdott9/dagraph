@@ -1,4 +1,4 @@
-module Dagger
+module Dagraph
   class NodeConfig
     def initialize(model_class, **options)
       @model_class = model_class

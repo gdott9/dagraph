@@ -2,8 +2,8 @@
 
 require "test_helper"
 
-class TestDagger < Minitest::Test
+class TestDagraph < Minitest::Test
   def test_that_it_has_a_version_number
-    refute_nil ::Dagger::VERSION
+    refute_nil ::Dagraph::VERSION
   end
 end

@@ -1,7 +1,7 @@
 require 'active_support/concern'
 require 'active_support/core_ext/array/access'
 
-module Dagger
+module Dagraph
   module EdgeModel
     extend ActiveSupport::Concern
 
@@ -10,8 +10,8 @@ module Dagger
       belongs_to :direct_edge, class_name: model_name.to_s, optional: true
       belongs_to :exit_edge, class_name: model_name.to_s, optional: true
 
-      belongs_to :parent, class_name: _dagger.nodes_class_name
-      belongs_to :child, class_name: _dagger.nodes_class_name
+      belongs_to :parent, class_name: _dagraph.nodes_class_name
+      belongs_to :child, class_name: _dagraph.nodes_class_name
 
       scope :direct, -> { where hops: 0 }
       scope :implicit, -> { where.not hops: 0 }
@@ -26,7 +26,7 @@ module Dagger
       before_destroy :destroy_implicit_edges!
       after_destroy :calculate_direct_edges_weight!
 
-      validate :_dagger_cycle_detection
+      validate :_dagraph_cycle_detection
     end
 
     def direct?
@@ -64,7 +64,7 @@ module Dagger
     def add_implicit_edges!
       return unless direct?
 
-      self.class.with_advisory_lock("dagger_#{self.class.table_name}") do
+      self.class.with_advisory_lock("dagraph_#{self.class.table_name}") do
         self.class.where(id: id).update_all(entry_edge_id: id, direct_edge_id: id, exit_edge_id: id)
 
         direct_edges_count = self.class.direct.where(child: child).count
@@ -142,7 +142,7 @@ module Dagger
       end
     end
 
-    def _dagger_cycle_detection
+    def _dagraph_cycle_detection
       if parent == child || child.parent_of?(parent)
         errors.add :base, :cycle_detected, message: 'You cannot add a parent as a child'
       end

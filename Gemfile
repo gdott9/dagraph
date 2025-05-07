@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in dagger.gemspec
+# Specify your gem's dependencies in dagraph.gemspec
 gemspec
 
 gem "rake", "~> 13.0"

@@ -1,10 +1,10 @@
-![Dagger Logo](https://raw.githubusercontent.com/gdott9/dagger/main/dagger.png)
+![Dagraph Logo](https://raw.githubusercontent.com/gdott9/dagraph/main/dagger.png)
 
-# Dagger
+# Dagraph
 
 TODO: Delete this and the text below, and describe your gem
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/dagger`. To experiment with that code, run `bin/console` for an interactive prompt.
+Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/dagraph`. To experiment with that code, run `bin/console` for an interactive prompt.
 
 ## Installation
 
@@ -30,10 +30,14 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/dagger.
+Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/dagraph.
 
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 [Dagger icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/dagger)
+
+https://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o#Figure2
+https://arxiv.org/pdf/2211.11159
+https://www.baeldung.com/cs/dag-applications
