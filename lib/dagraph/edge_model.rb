@@ -79,6 +79,7 @@ module Dagraph
           end
         end
 
+        source_condition = source ? "= ?" : "IS NULL"
         select = self.class.sanitize_sql_array(
           [
             "x.id, :id, :id, x.parent_id, :child_id, x.hops + 1, x.weight * :weight / 100, x.source",
@@ -86,7 +87,7 @@ module Dagraph
           ]
         )
         where = self.class.sanitize_sql_for_conditions(
-          ["x.child_id = ? AND x.source = ?", parent_id, source]
+          ["x.child_id = ? AND x.source #{source_condition}", parent_id, source].compact
         )
         self.class.connection.exec_insert insert_query(select, where)
 
@@ -97,7 +98,7 @@ module Dagraph
           ]
         )
         where = self.class.sanitize_sql_for_conditions(
-          ["x.parent_id = ? AND x.source = ?", child_id, source]
+          ["x.parent_id = ? AND x.source #{source_condition}", child_id, source].compact
         )
         self.class.connection.exec_insert insert_query(select, where)
 
@@ -108,7 +109,7 @@ module Dagraph
           ]
         )
         where = self.class.sanitize_sql_for_conditions(
-          ["x.child_id = ? AND y.parent_id = ? AND x.source = ? AND y.source = ?", parent_id, child_id, source, source]
+          ["x.child_id = ? AND y.parent_id = ? AND x.source #{source_condition} AND y.source #{source_condition}", parent_id, child_id, source, source].compact
         )
         self.class.connection.exec_insert insert_query(select, where, cross_join: true)
       end
